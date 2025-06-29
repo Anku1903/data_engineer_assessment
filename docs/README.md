@@ -146,10 +146,105 @@ All tables meet 1NF (atomic fields), 2NF (no partial key dependencies), and 3NF 
 
 After this setup is verified, you can run your Python ETL script to load data into each table.
 
-> **Document your ETL logic here:**  
-> - Outline your approach and design  
-> - Provide instructions and code snippets for running the ETL  
-> - List any requirements
+ 
+## Python ETL logic
+
+### Overview
+
+Python ETL script follows a clear Extract → Transform → Load pattern:
+
+1. **Extract:** Read raw CSV file into a pandas DataFrame.
+   
+2. **Transform:**
+
+   * Convert columns to proper dtypes.
+   * Trim whitespace and normalize text.
+   * Round key decimal fields to 2 decimal points.
+   * Impute missing “Flag” columns as `"No"` and other string columns as `"Unknown"`.
+   * Drop rows with any negative integer attributes.
+   * Remove fully duplicate rows
+     
+3. **Load:**
+
+   * Write unique addresses into `Address_info` and capture their Auto-generated primary key IDs.
+   * Write unique properties (linking to `Address_ID`) into `Property` table and capture their Auto-generated primary key IDs.
+   * Insert those `Property_ID` values into each child DataFrame (`Leads`, `Valuation`, `Rehab`, `HOA`, `Taxes`) and bulk insert.
+
+### Approach & Design
+
+
+1. **Modular functions**
+
+- **`extract()`** reads the CSV.  
+- **`transform()`** applies all cleaning, filling missing data and other transformations.  
+- **`insert_address_data_to_mysql()`** & **`insert_property_data_to_mysql()`** perform row-by-row inserts, and retrive `lastrowid` for surrogate keys.  
+- **`insert_to_mysql()`** bulk-inserts any table once its DataFrame is ready into MYSQL.  
+- **`load_data()`** ties everything together for loading transformed data: building the DataFrames, mapping primary key IDs, and calling the insert functions for multiple tables.  
+
+2. **Type safety**
+
+   * We convert pandas’ nullable `Int64`/`Float64` to native Python types before inserting data to MYSQL.
+     
+3. **Error handling**
+
+   * Each insert function catches and logs any `mysql.connector.Error`, so failures are visible without crashing the entire run.
+
+
+### How to Run ETL script
+
+1. **Ensure your database is ready**
+
+   ```bash
+   docker-compose -f docker-compose.final.yml up --build -d
+   ```
+
+   * Wait until MySQL reports “ready for connections.”
+
+2. **Install dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   Your `requirements.txt` includes:
+
+   ```text
+   pandas
+   mysql-connector-python
+   ```
+
+4. **Configure connection**
+   In `etl.py` (or via environment variables), set:
+
+   ```python
+   DB_CONFIG = {
+       "host":     "127.0.0.1",
+       "port":     3306,
+       "user":     "db_user",
+       "password": "6equj5_db_user",
+       "database": "home_db"
+   }
+   CSV_FILE_PATH = "sql/fake_data.csv"
+   ```
+
+5. **Run the ETL**
+
+   ```bash
+   python etl.py
+   ```
+
+   You should see console output.
+
+
+### Requirements
+
+* **Python 3.8+**
+* **pandas** (for DataFrame operations)
+* **mysql-connector-python** (for connecting to MySQL)
+* **Docker & docker-compose** (to spin up the MySQL instance)
+
+With those in place, you can repeatably run the ETL end-to-end, transforming the raw CSV into a fully normalized, relational MySQL database.
+
 
 ---
 
