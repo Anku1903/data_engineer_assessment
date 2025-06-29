@@ -146,6 +146,9 @@ All tables meet 1NF (atomic fields), 2NF (no partial key dependencies), and 3NF 
 
 After this setup is verified, you can run your Python ETL script to load data into each table.
 
+
+
+ 
  
 ## Python ETL logic
 
@@ -166,7 +169,7 @@ Python ETL script follows a clear Extract → Transform → Load pattern:
      
 3. **Load:**
 
-   * Write unique addresses into `Address_info` and capture their Auto-generated primary key IDs.
+   * Write unique addresses into `Address_info` table and capture their Auto-generated primary key IDs.
    * Write unique properties (linking to `Address_ID`) into `Property` table and capture their Auto-generated primary key IDs.
    * Insert those `Property_ID` values into each child DataFrame (`Leads`, `Valuation`, `Rehab`, `HOA`, `Taxes`) and bulk insert.
 
@@ -177,7 +180,7 @@ Python ETL script follows a clear Extract → Transform → Load pattern:
 
 - **`extract()`** reads the CSV.  
 - **`transform()`** applies all cleaning, filling missing data and other transformations.  
-- **`insert_address_data_to_mysql()`** & **`insert_property_data_to_mysql()`** perform row-by-row inserts, and retrive `lastrowid` for surrogate keys.  
+- **`insert_address_data_to_mysql()`** & **`insert_property_data_to_mysql()`** perform row-by-row inserts, and retrive `lastrowid` for setting up as a Forign keys to other tables.  
 - **`insert_to_mysql()`** bulk-inserts any table once its DataFrame is ready into MYSQL.  
 - **`load_data()`** ties everything together for loading transformed data: building the DataFrames, mapping primary key IDs, and calling the insert functions for multiple tables.  
 
@@ -213,21 +216,7 @@ Python ETL script follows a clear Extract → Transform → Load pattern:
    mysql-connector-python
    ```
 
-4. **Configure connection**
-   In `etl.py` (or via environment variables), set:
-
-   ```python
-   DB_CONFIG = {
-       "host":     "127.0.0.1",
-       "port":     3306,
-       "user":     "db_user",
-       "password": "6equj5_db_user",
-       "database": "home_db"
-   }
-   CSV_FILE_PATH = "sql/fake_data.csv"
-   ```
-
-5. **Run the ETL**
+4. **Run the ETL**
 
    ```bash
    python etl.py
@@ -241,9 +230,9 @@ Python ETL script follows a clear Extract → Transform → Load pattern:
 * **Python 3.8+**
 * **pandas** (for DataFrame operations)
 * **mysql-connector-python** (for connecting to MySQL)
-* **Docker & docker-compose** (to spin up the MySQL instance)
+* **Docker & docker-compose** (to run the MySQL image)
 
-With those in place, you can repeatably run the ETL end-to-end, transforming the raw CSV into a fully normalized, relational MySQL database.
+With those in place, you can repeatably run the ETL end-to-end, transforming the raw CSV into a fully normalized MySQL tables.
 
 
 ---
