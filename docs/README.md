@@ -67,16 +67,173 @@ Use **MySQL** and SQL for all database work
 - You may use any CLI or GUI for development, but the final changes must be submitted as python/ SQL scripts 
 - **Do not** use ORM migrations—write all SQL by hand
 
-### Solution
+# Solution
 
-> **Document your database design and solution here:**  
-> - Explain your schema and any design decisions  
-> - Give clear instructions on how to run and test your script
+## Database design & Normalization
 
-> **Document your ETL logic here:**  
-> - Outline your approach and design  
-> - Provide instructions and code snippets for running the ETL  
-> - List any requirements
+### What is normalization?
+
+Database normalization is the process of structuring tables to reduce redundancy and ensure data integrity.
+
+1. **First Normal Form (1NF):** Every column holds atomic values; each row is unique.
+2. **Second Normal Form (2NF):** Builds on 1NF by removing partial dependencies—every non-key column depends on the entire primary key.
+3. **Third Normal Form (3NF):** Removes transitive dependencies—non-key columns depend only on the primary key, not on other non-key columns.
+
+### Schema design and tables
+
+We split the data into 7 tables, each focused on a single business domain, and linked via surrogate keys to eliminate redundancy and enforce referential integrity:
+
+1. **Address\_info**
+   
+   **Columns:** `Address_ID (PK)`, `Address`, `Street_Address`, `City`, `State`, `Zip`
+    
+   **Why:** Centralizes all address details so that every property record points to a single address, avoiding repeated city/state text across rows.
+
+2. **Property**
+   
+   **Columns:**
+   `Property_ID (PK)`, `Property_Title`, `Market`, `Flood`, `Property_Type`,
+   `Highway`, `Train`, `Tax_Rate`, `SQFT_Basement`, `HTW`, `Pool`,
+   `Commercial`, `Water`, `Sewage`, `Year_Built`, `SQFT_MU`, `SQFT_Total`,
+   `Parking`, `Bed`, `Bath`, `BasementYesNo`, `Layout`, `Rent_Restricted`,
+   `Neighborhood_Rating`, `Latitude`, `Longitude`, `Subdivision`,
+   `School_Average`, `Address_ID (FK)`
+    
+   **Why:** Holds the core, static attributes of each property. The `Address_ID` FK ensures each property is tied to exactly one address record.
+
+3. **Leads**
+   
+   **Columns:** `Lead_ID (PK)`, `Property_ID (FK)`, `Reviewed_Status`, `Most_Recent_Status`, `Source`, `Occupancy`, `Net_Yield`, `IRR`, `Selling_Reason`, `Seller_Retained_Broker`, `Final_Reviewer`
+    
+   **Why:** Captures the all Lead metrics for each property, keeping this volatile data out of the main property table.
+
+4. **Valuation**
+   
+   **Columns:** `Valuation_ID (PK)`, `Property_ID (FK)`, `Previous_Rent`, `List_Price`, `Zestimate`, `ARV`, `Expected_Rent`, `Rent_Zestimate`, `Low_FMR`,             `High_FMR`, `Redfin_Value`
+   
+   **Why:** Captures all financial estimates so that complex valuation metrics don’t clutter other tables.
+
+6. **Rehab**
+    
+   **Columns:** `Rehab_ID (PK)`, `Property_ID (FK)`, `Underwriting_Rehab`, `Rehab_Calculation`, `Paint`, `Flooring_Flag`, `Foundation_Flag`, `Roof_Flag`, `HVAC_Flag`, `Kitchen_Flag`, `Bathroom_Flag`, `Appliances_Flag`, `Windows_Flag`, `Landscaping_Flag`, `Trashout_Flag`
+    
+   **Why:** Groups all renovation-related fields together, preventing sparsity and simplifying maintenance of rehab data.
+
+7. **HOA**
+    
+   **Columns:** `HOA_ID (PK)`, `Property_ID (FK)`, `HOA`, `HOA_Flag`
+     
+   **Why:** Separates homeowners-association details, as not every property has HOA fees.
+
+8. **Taxes**
+    
+   **Columns:** `Tax_ID (PK)`, `Property_ID (FK)`, `Taxes`
+     
+   **Why:** Stores tax related data independently, ready for tax-specific queries.
+
+All tables meet 1NF (atomic fields), 2NF (no partial key dependencies), and 3NF (no transitive dependencies).
+
+### How to run and test the SQL scripts
+
+**Start the fully-initialized MySQL container**
+
+   ```bash
+   docker-compose -f docker-compose.final.yml up --build -d
+   ```
+
+   * This runs `00_init_db_dump.sql` first (in my case this file act as just placeholder for docker), then `99_final_db_dump.sql` (creates full schema).
+
+
+After this setup is verified, you can run your Python ETL script to load data into each table.
+
+
+
+ 
+ 
+## Python ETL logic
+
+### Overview
+
+Python ETL script follows a clear Extract → Transform → Load pattern:
+
+1. **Extract:** Read raw CSV file into a pandas DataFrame.
+   
+2. **Transform:**
+
+   * Convert columns to proper dtypes.
+   * Trim whitespace and normalize text.
+   * Round key decimal fields to 2 decimal points.
+   * Impute missing “Flag” columns as `"No"` and other string columns as `"Unknown"`.
+   * Drop rows with any negative integer attributes.
+   * Remove fully duplicate rows
+     
+3. **Load:**
+
+   * Write unique addresses into `Address_info` table and capture their Auto-generated primary key IDs.
+   * Write unique properties (linking to `Address_ID`) into `Property` table and capture their Auto-generated primary key IDs.
+   * Insert those `Property_ID` values into each child DataFrame (`Leads`, `Valuation`, `Rehab`, `HOA`, `Taxes`) and bulk insert.
+
+### Approach & Design
+
+
+1. **Modular functions**
+
+- **`extract()`** reads the CSV.  
+- **`transform()`** applies all cleaning, filling missing data and other transformations.  
+- **`insert_address_data_to_mysql()`** & **`insert_property_data_to_mysql()`** perform row-by-row inserts, and retrive `lastrowid` for setting up as a Forign keys to other tables.  
+- **`insert_to_mysql()`** bulk-inserts any table once its DataFrame is ready into MYSQL.  
+- **`load_data()`** ties everything together for loading transformed data: building the DataFrames, mapping primary key IDs, and calling the insert functions for multiple tables.  
+
+2. **Type safety**
+
+   * We convert pandas’ nullable `Int64`/`Float64` to native Python types before inserting data to MYSQL.
+     
+3. **Error handling**
+
+   * Each insert function catches and logs any `mysql.connector.Error`, so failures are visible without crashing the entire run.
+
+
+### How to Run ETL script
+
+1. **Ensure your database is ready**
+
+   ```bash
+   docker-compose -f docker-compose.final.yml up --build -d
+   ```
+
+   * Wait until MySQL reports “ready for connections.”
+
+2. **Install dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   Your `requirements.txt` includes:
+
+   ```text
+   pandas
+   mysql-connector-python
+   ```
+
+4. **Run the ETL**
+
+   ```bash
+   python etl.py
+   ```
+
+   You should see console output.
+
+
+### Requirements
+
+* **Python 3.8+**
+* **pandas** (for DataFrame operations)
+* **mysql-connector-python** (for connecting to MySQL)
+* **Docker Desktop** (to run the MySQL image)
+
+With those in place, you can repeatably run the ETL end-to-end, transforming the raw CSV into a fully normalized MySQL tables.
+
 
 ---
 
