@@ -89,7 +89,7 @@ We split the data into 7 tables, each focused on a single business domain, and l
     
    **Why:** Centralizes all address details so that every property record points to a single address, avoiding repeated city/state text across rows.
 
-3. **Property**
+2. **Property**
    
    **Columns:**
    `Property_ID (PK)`, `Property_Title`, `Market`, `Flood`, `Property_Type`,
@@ -101,30 +101,31 @@ We split the data into 7 tables, each focused on a single business domain, and l
     
    **Why:** Holds the core, static attributes of each property. The `Address_ID` FK ensures each property is tied to exactly one address record.
 
-5. **Leads**
+3. **Leads**
    
    **Columns:** `Lead_ID (PK)`, `Property_ID (FK)`, `Reviewed_Status`, `Most_Recent_Status`, `Source`, `Occupancy`, `Net_Yield`, `IRR`, `Selling_Reason`, `Seller_Retained_Broker`, `Final_Reviewer`
     
    **Why:** Captures the dynamic workflow status and deal metrics for each property, keeping this volatile data out of the main property table.
 
-7. **Valuation**
+4. **Valuation**
    
-   **Columns:** `Valuation_ID (PK)`, `Property_ID (FK)`, `Previous_Rent`, `List_Price`, `Zestimate`, `ARV`, `Expected_Rent`, `Rent_Zestimate`, `Low_FMR`, `High_FMR`, `Redfin_Value`
+   **Columns:** `Valuation_ID (PK)`, `Property_ID (FK)`, `Previous_Rent`, `List_Price`, `Zestimate`, `ARV`, `Expected_Rent`, `Rent_Zestimate`, `Low_FMR`,             `High_FMR`, `Redfin_Value`
+   
    **Why:** Isolates financial estimates so that complex valuation metrics don’t clutter other tables.
 
-9. **Rehab**
+6. **Rehab**
     
    **Columns:** `Rehab_ID (PK)`, `Property_ID (FK)`, `Underwriting_Rehab`, `Rehab_Calculation`, `Paint`, `Flooring_Flag`, `Foundation_Flag`, `Roof_Flag`, `HVAC_Flag`, `Kitchen_Flag`, `Bathroom_Flag`, `Appliances_Flag`, `Windows_Flag`, `Landscaping_Flag`, `Trashout_Flag`
     
    **Why:** Groups all renovation-related fields together, preventing sparsity and simplifying maintenance of rehab data.
 
-11. **HOA**
+7. **HOA**
     
    **Columns:** `HOA_ID (PK)`, `Property_ID (FK)`, `HOA`, `HOA_Flag`
      
    **Why:** Separates homeowners-association details, as not every property has HOA fees.
 
-11. **Taxes**
+8. **Taxes**
     
    **Columns:** `Tax_ID (PK)`, `Property_ID (FK)`, `Taxes`
      
