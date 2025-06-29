@@ -269,3 +269,5 @@ if __name__ == '__main__':
     df = transform(df)
     
     load_data(df)
+
+    print("ETL process completed successfully!")
