@@ -230,7 +230,7 @@ Python ETL script follows a clear Extract → Transform → Load pattern:
 * **Python 3.8+**
 * **pandas** (for DataFrame operations)
 * **mysql-connector-python** (for connecting to MySQL)
-* **Docker & docker-compose** (to run the MySQL image)
+* **Docker Desktop** (to run the MySQL image)
 
 With those in place, you can repeatably run the ETL end-to-end, transforming the raw CSV into a fully normalized MySQL tables.
 
