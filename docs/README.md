@@ -105,13 +105,13 @@ We split the data into 7 tables, each focused on a single business domain, and l
    
    **Columns:** `Lead_ID (PK)`, `Property_ID (FK)`, `Reviewed_Status`, `Most_Recent_Status`, `Source`, `Occupancy`, `Net_Yield`, `IRR`, `Selling_Reason`, `Seller_Retained_Broker`, `Final_Reviewer`
     
-   **Why:** Captures the dynamic workflow status and deal metrics for each property, keeping this volatile data out of the main property table.
+   **Why:** Captures the all Lead metrics for each property, keeping this volatile data out of the main property table.
 
 4. **Valuation**
    
    **Columns:** `Valuation_ID (PK)`, `Property_ID (FK)`, `Previous_Rent`, `List_Price`, `Zestimate`, `ARV`, `Expected_Rent`, `Rent_Zestimate`, `Low_FMR`,             `High_FMR`, `Redfin_Value`
    
-   **Why:** Isolates financial estimates so that complex valuation metrics don’t clutter other tables.
+   **Why:** Captures all financial estimates so that complex valuation metrics don’t clutter other tables.
 
 6. **Rehab**
     
@@ -129,7 +129,7 @@ We split the data into 7 tables, each focused on a single business domain, and l
     
    **Columns:** `Tax_ID (PK)`, `Property_ID (FK)`, `Taxes`
      
-   **Why:** Stores annual tax amounts independently, ready for tax-specific queries.
+   **Why:** Stores tax related data independently, ready for tax-specific queries.
 
 All tables meet 1NF (atomic fields), 2NF (no partial key dependencies), and 3NF (no transitive dependencies).
 
