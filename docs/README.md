@@ -141,7 +141,7 @@ All tables meet 1NF (atomic fields), 2NF (no partial key dependencies), and 3NF 
    docker-compose -f docker-compose.final.yml up --build -d
    ```
 
-   * This runs `00_init_db_dump.sql` first (creates database and user), then `99_final_db_dump.sql` (creates full schema).
+   * This runs `00_init_db_dump.sql` first (in my case this file act as just placeholder for docker), then `99_final_db_dump.sql` (creates full schema).
 
 
 After this setup is verified, you can run your Python ETL script to load data into each table.
